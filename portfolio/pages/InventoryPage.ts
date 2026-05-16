@@ -10,7 +10,7 @@ export class InventoryPage {
   constructor(page: Page) {
     this.page = page;
     this.inventoryItems = page.locator('.inventory_item');
-    this.sortDropdown = page.locator('[data-test="product_sort_container"]');
+    this.sortDropdown = page.locator('.product_sort_container');
     this.cartBadge = page.locator('.shopping_cart_badge');
     this.cartIcon = page.locator('.shopping_cart_link');
   }
@@ -27,19 +27,24 @@ export class InventoryPage {
   }
 
   async sortBy(option: 'az' | 'za' | 'lohi' | 'hilo') {
+    await this.sortDropdown.waitFor({ state: 'visible' });
     await this.sortDropdown.selectOption(option);
+    // Wait for DOM to settle after sort
+    await this.page.waitForFunction((opt) => {
+      const el = document.querySelector('.product_sort_container') as HTMLSelectElement;
+      return el && el.value === opt;
+    }, option);
+    await this.page.waitForTimeout(300);
   }
 
   async getItemNames(): Promise<string[]> {
-    return await this.inventoryItems
-      .locator('.inventory_item_name')
-      .allInnerTexts();
+    await this.page.locator('.inventory_item_name').first().waitFor({ state: 'visible' });
+    return await this.page.locator('.inventory_item_name').allInnerTexts();
   }
 
   async getItemPrices(): Promise<number[]> {
-    const priceTexts = await this.inventoryItems
-      .locator('.inventory_item_price')
-      .allInnerTexts();
+    await this.page.locator('.inventory_item_price').first().waitFor({ state: 'visible' });
+    const priceTexts = await this.page.locator('.inventory_item_price').allInnerTexts();
     return priceTexts.map((p) => parseFloat(p.replace('$', '')));
   }
 
